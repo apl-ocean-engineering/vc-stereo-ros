@@ -27,3 +27,9 @@ repos:
 #         additional_dependencies: [pep8-naming, flake8-bugbear, flake8-comprehensions]
 #         # formatting handles line-length, no reason for linter to also flag.
 #         args: [--ignore, E501, --per-file-ignores, "__init__.py:F401"]
+
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+    -   id: mypy
+        additional_dependencies: [types-PyYAML]

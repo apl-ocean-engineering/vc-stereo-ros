@@ -3,16 +3,39 @@
 import rospy
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
+from camera_info_manager import CameraInfoManager
 
 
 class VcStereoPublisher:
     def __init__(self):
 
+        left_calib_url = rospy.get_param("~left_camera_info")
+        right_calib_url = rospy.get_param("~right_camera_info")
+
+        rospy.loginfo(f"Loading left calibration: {left_calib_url}")
+        rospy.loginfo(f"Loading left calibration: {right_calib_url}")
+
+        self.left_cam_mgr = CameraInfoManager(
+            "left", url=left_calib_url, namespace="left"
+        )
+        self.left_cam_mgr.loadCameraInfo()
+
+        self.right_cam_mgr = CameraInfoManager(
+            "right", url=right_calib_url, namespace="right"
+        )
+        self.right_cam_mgr.loadCameraInfo()
+
         self.left_image_pub = rospy.Publisher("left/image_raw", Image, queue_size=10)
         self.right_image_pub = rospy.Publisher("right/image_raw", Image, queue_size=10)
-
         self.bridge = CvBridge()
+
+        self.left_info_pub = rospy.Publisher(
+            "left/camera_info", CameraInfo, queue_size=10
+        )
+        self.right_info_pub = rospy.Publisher(
+            "right/camera_info", CameraInfo, queue_size=10
+        )
 
         # This is fixed for these cameras
         self.image_size = (1080, 1440)
@@ -47,6 +70,8 @@ mix. ! video/x-raw(memory:GLMemory),multiview-mode=side-by-side ! glcolorconvert
 
             success, composite = self.stereo.read()
 
+            frame_time = rospy.Time.now()
+
             if success is False:
                 rospy.logwarn("no image")
                 continue
@@ -58,15 +83,31 @@ mix. ! video/x-raw(memory:GLMemory),multiview-mode=side-by-side ! glcolorconvert
 
             try:
                 img_msg = self.bridge.cv2_to_imgmsg(left_img, "bgr8")
+                img_msg.header.frame_id = "left"
+                img_msg.header.stamp = frame_time
+
                 self.left_image_pub.publish(img_msg)
             except CvBridgeError as error:
                 rospy.logwarn(error)
 
             try:
                 img_msg = self.bridge.cv2_to_imgmsg(right_img, "bgr8")
+                img_msg.header.frame_id = "right"
+                img_msg.header.stamp = frame_time
+
                 self.right_image_pub.publish(img_msg)
             except CvBridgeError as error:
                 rospy.logwarn(error)
+
+            left_info = self.left_cam_mgr.getCameraInfo()
+            left_info.header.frame_id = "left"
+            left_info.header.stamp = frame_time
+            self.left_info_pub.publish(left_info)
+
+            right_info = self.right_cam_mgr.getCameraInfo()
+            right_info.header.frame_id = "right"
+            right_info.header.stamp = frame_time
+            self.right_info_pub.publish(right_info)
 
 
 if __name__ == "__main__":

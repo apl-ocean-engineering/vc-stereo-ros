@@ -5,8 +5,10 @@ project(vc_stereo_ros)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+              camera_info_manager_py
               cv_bridge
-              rospy )
+              rospy
+              )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

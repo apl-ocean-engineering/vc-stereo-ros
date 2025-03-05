@@ -2,7 +2,14 @@
 
 <launch>
 
+  <arg name="calibration" default="aaron_in_air" />
+
   <node name="vc_stereo_node" pkg="vc_stereo_ros" type="vc_stereo_node" output="screen" >
+
+    <param name="left_camera_info" value="file://$(find vc_stereo_ros)/calib/$(arg calibration)/left_stereo_params.yaml" />
+    <param name="right_camera_info" value="file://$(find vc_stereo_ros)/calib/$(arg calibration)/right_stereo_params.yaml" />
+
+
   </node>
 
 </launch>

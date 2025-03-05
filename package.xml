@@ -24,6 +24,8 @@
 
   <exec_depend>rospy</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>camera_info_manage_py</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
