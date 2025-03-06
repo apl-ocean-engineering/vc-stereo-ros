@@ -10,21 +10,36 @@ from camera_info_manager import CameraInfoManager
 class VcStereoPublisher:
     def __init__(self):
 
-        left_calib_url = rospy.get_param("~left_camera_info")
-        right_calib_url = rospy.get_param("~right_camera_info")
+        try:
+            left_calib_url = rospy.get_param("~left_camera_info")
 
-        rospy.loginfo(f"Loading left calibration: {left_calib_url}")
-        rospy.loginfo(f"Loading left calibration: {right_calib_url}")
+            rospy.loginfo(f"Loading left calibration: {left_calib_url}")
 
-        self.left_cam_mgr = CameraInfoManager(
-            "left", url=left_calib_url, namespace="left"
-        )
-        self.left_cam_mgr.loadCameraInfo()
+            self.left_cam_mgr = CameraInfoManager(
+                "left", url=left_calib_url, namespace="left"
+            )
+            self.left_cam_mgr.loadCameraInfo()
+        except KeyError:
+            rospy.logwarn(
+                'ROS param "left_camera_info" is not defined, not publishing camera calibration'
+            )
+            self.left_cam_mgr = None
 
-        self.right_cam_mgr = CameraInfoManager(
-            "right", url=right_calib_url, namespace="right"
-        )
-        self.right_cam_mgr.loadCameraInfo()
+        try:
+            right_calib_url = rospy.get_param("~right_camera_info")
+
+            rospy.loginfo(f"Loading right calibration: {right_calib_url}")
+
+            self.right_cam_mgr = CameraInfoManager(
+                "right", url=right_calib_url, namespace="right"
+            )
+            self.right_cam_mgr.loadCameraInfo()
+
+        except KeyError:
+            rospy.logwarn(
+                'ROS param "right_camera_info" is not defined, not publishing camera calibration'
+            )
+            self.right_cam_mgr = None
 
         self.left_image_pub = rospy.Publisher("left/image_raw", Image, queue_size=10)
         self.right_image_pub = rospy.Publisher("right/image_raw", Image, queue_size=10)
@@ -99,15 +114,17 @@ mix. ! video/x-raw(memory:GLMemory),multiview-mode=side-by-side ! glcolorconvert
             except CvBridgeError as error:
                 rospy.logwarn(error)
 
-            left_info = self.left_cam_mgr.getCameraInfo()
-            left_info.header.frame_id = "left"
-            left_info.header.stamp = frame_time
-            self.left_info_pub.publish(left_info)
+            if self.left_cam_mgr is not None:
+                left_info = self.left_cam_mgr.getCameraInfo()
+                left_info.header.frame_id = "left"
+                left_info.header.stamp = frame_time
+                self.left_info_pub.publish(left_info)
 
-            right_info = self.right_cam_mgr.getCameraInfo()
-            right_info.header.frame_id = "right"
-            right_info.header.stamp = frame_time
-            self.right_info_pub.publish(right_info)
+            if self.right_cam_mgr is not None:
+                right_info = self.right_cam_mgr.getCameraInfo()
+                right_info.header.frame_id = "right"
+                right_info.header.stamp = frame_time
+                self.right_info_pub.publish(right_info)
 
 
 if __name__ == "__main__":
